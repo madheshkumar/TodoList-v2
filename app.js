@@ -3,6 +3,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const _ = require("lodash");
 
 const app = express();
 
@@ -60,38 +61,53 @@ async function run() {
   });
 
   app.get("/:customListName", async function (req, res) {
-    const customListName = req.params.customListName;
+    const customListName = _.capitalize(req.params.customListName);
     const foundList = await List.findOne({ name: customListName });
-    if (foundList == null) {
+    if (foundList == null && foundList !== "favicon.ico") {
       const list = new List({
         name: customListName,
         items: defaultItems,
       });
       list.save();
-      res.redirect("/"+customListName);
-    } else {
+      res.redirect("/" + customListName);
+    } else if( foundList !== "favicon.ico") {
       res.render("list", {
         listTitle: customListName,
         newListItems: foundList.items,
       });
-
     }
   });
 
-  app.post("/", function (req, res) {
+  app.post("/", async function (req, res) {
     const itemName = req.body.newItem;
+    const listName = req.body.list;
     const item = new Item({
       name: itemName,
     });
-    item.save();
-    listitems.push(item);
-    res.redirect("/");
+
+    if (listName === "Today") {
+      item.save();
+      listitems.push(item);
+      res.redirect("/");
+    } else {
+      const found_List = await List.findOne({ name: listName });
+      found_List.items.push(item);
+      found_List.save();
+      res.redirect("/" + listName);
+    }
   });
 
   app.post("/delete", async function (req, res) {
     var checkedid = req.body.checkbox;
-    await Item.findByIdAndRemove(checkedid);
-    res.redirect("/");
+    var listName = req.body.listName;
+
+    if (listName === "Today") {
+      await Item.findByIdAndRemove(checkedid);
+      res.redirect("/");
+    }else{
+      await List.findOneAndUpdate({name:listName},{$pull:{items:{_id:checkedid}}});
+      res.redirect("/" + listName);
+    }
   });
 }
 run().catch(console.dir);
