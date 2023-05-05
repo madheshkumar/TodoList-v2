@@ -14,7 +14,7 @@ app.use(express.static("public"));
 var listitems = [];
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/todolistDB")
+  .connect("mongodb+srv://madhesh:madhesh@cluster0.joxa27o.mongodb.net/todolistDB")
   .then(() => console.log("Connected to mongoDB"))
   .catch((err) => console.log("mongo error", err));
 
